@@ -18,8 +18,6 @@ export interface HandoverConfig {
 	enabled: boolean;
 	/** Model id used for handover generation (default: current session model). */
 	handoverModel?: string | undefined;
-	/** "none" clears kept messages after compaction (default: "default"). */
-	keepRecent: "default" | "none";
 	/** Where handover documents are written, relative to cwd (default: ".pi/handovers"). */
 	outputDir?: string | undefined;
 	/** Length cap for the document in words (default: 800). */
@@ -64,7 +62,6 @@ export function loadHandoverConfig(cwd: string, projectTrusted: boolean): Handov
 	return {
 		enabled: merged["enabled"] === undefined ? true : Boolean(merged["enabled"]),
 		handoverModel: optionalString(merged["handoverModel"]),
-		keepRecent: merged["keepRecent"] === "none" ? "none" : "default",
 		outputDir: optionalString(merged["outputDir"]),
 		maxWords:
 			typeof maxWordsRaw === "number" && Number.isFinite(maxWordsRaw) && maxWordsRaw > 0

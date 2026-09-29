@@ -11,7 +11,9 @@ import {
 	buildHandoverUserPrompt,
 	extractTitle,
 	formatFileInventory,
+	RECONCILIATION_NOTE,
 	validateHandoverDoc,
+	withReconciliationNote,
 } from "../extensions/handover.ts";
 import { REQUIRED_SECTIONS, sampleDoc } from "./helpers.ts";
 
@@ -120,4 +122,13 @@ test("formatFileInventory splits read-only from modified files", () => {
 	});
 	assert.ok(inventory.includes("<read-files>\na.ts\n</read-files>"), "read-only files, sorted");
 	assert.ok(inventory.includes("<modified-files>\nb.ts\nc.ts\n</modified-files>"), "written + edited, sorted");
+});
+
+test("withReconciliationNote appends the boundary note after the document", () => {
+	const doc = sampleDoc();
+	const noted = withReconciliationNote(doc);
+	assert.ok(noted.startsWith(doc), "document preserved verbatim");
+	assert.ok(noted.includes(RECONCILIATION_NOTE), "note appended at the end");
+	assert.ok(noted.trimEnd().endsWith(RECONCILIATION_NOTE), "note is the last content");
+	assert.ok(RECONCILIATION_NOTE.includes("checklist"), "note explains checklist semantics");
 });

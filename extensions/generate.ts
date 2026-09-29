@@ -5,7 +5,7 @@
 
 import { type Message, type Model, type Usage, uuidv7 } from "@earendil-works/pi-ai";
 import type { ModelRegistry } from "@earendil-works/pi-coding-agent";
-import { buildHandoverUserPrompt, extractTitle, HANDOVER_PROMPT, validateHandoverDoc } from "./handover.ts";
+import { buildHandoverUserPrompt, extractTitle, HANDOVER_PROMPT, validateHandoverDoc, withReconciliationNote } from "./handover.ts";
 import type { HandoverConfig } from "./config.ts";
 
 /** Agent message array type accepted by pi's convertToLlm. */
@@ -127,10 +127,12 @@ export async function generateHandover(args: GenerateHandoverArgs): Promise<Gene
 			return { failure: { reason: "empty" } };
 		}
 
-		const doc = validateHandoverDoc(text);
-		if (!doc) {
+		const validated = validateHandoverDoc(text);
+		if (!validated) {
 			return { failure: { reason: "invalid", detail: `head: ${text.slice(0, 160)}` } };
 		}
+
+		const doc = withReconciliationNote(validated);
 
 		return {
 			result: { doc, title: extractTitle(doc), usage: response.usage },

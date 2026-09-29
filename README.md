@@ -65,6 +65,11 @@ It is persisted to:
 - `<cwd>/.pi/handover.md` — copy of the latest document (fixed path, easy to
   reference in a bootstrap prompt)
 
+Every document also carries a trailing **handover boundary note** telling the
+successor model that messages newer than the document follow it in context —
+so "What is next" is a checklist to verify against those messages, not a
+queue to redo.
+
 Writes are best-effort: a write failure never aborts compaction.
 
 ## Configuration
@@ -77,7 +82,6 @@ In `~/.pi/agent/settings.json` (global) or `<project>/.pi/settings.json`
   "piHandover": {
     "enabled": true,
     "handoverModel": "google/gemini-2.5-flash",
-    "keepRecent": "default",
     "outputDir": ".pi/handovers",
     "maxWords": 800
   }
@@ -88,7 +92,6 @@ In `~/.pi/agent/settings.json` (global) or `<project>/.pi/settings.json`
 |---|---|---|
 | `enabled` | `true` | Hook active at all. |
 | `handoverModel` | *(session model)* | Model id used to write the document. The whole point: the *session* model may be a weak flash-tier model; let the best available model write the handover. Bare ids (`google/gemini-2.5-flash`) resolve to your configured providers; a warning is emitted when the session model is used as fallback. |
-| `keepRecent` | `"default"` | `"none"` clears all kept messages after compaction — only the handover document remains in context. |
 | `outputDir` | `.pi/handovers` | Where timestamped documents are written (relative to cwd). |
 | `maxWords` | `800` | Length cap for the document. |
 | `template` | built-in | Full prompt-template override. Placeholders: `{conversation}`, `{fileInventory}`, `{previousHandover}`, `{extraInstructions}`, `{maxWords}`. The four-section structure is still enforced by validation. |
@@ -114,7 +117,7 @@ pi -e ./extensions # try in a scratch pi session
 
 Implemented per SPEC.md; acceptance criteria in SPEC.md §7 verified
 end-to-end (hook, persistence, iterative `previousSummary` folding,
-`handoverModel` resolution, `keepRecent: "none"`, fallback-to-default).
+`handoverModel` resolution, fallback-to-default).
 
 ## Explanation
 
@@ -143,9 +146,7 @@ The saved context lives in two layers:
    is on the path, entries older than `firstKeptEntryId` are **omitted from
    projection**, and the compaction entry is projected as a single
    `compactionSummary` message near the front, followed by the kept entries.
-   So the handover doc literally *becomes* the visible history. (Verified:
-   after `keepRecent: "none"`, `get_messages` returns exactly one
-   `compactionSummary` message.)
+   So the handover doc literally *becomes* the visible history.
 
    Because projection, not deletion, is the mechanism, the old turns still
    exist — `/tree` can navigate back to them, and a repeated compaction can
@@ -167,6 +168,6 @@ The saved context lives in two layers:
 | Resumption | You start "fresh" with a prompt | The agent keeps its session id, name, tools state; only the visible history shrinks |
 
 The practical effect: token usage drops to roughly the size of the handover
-doc (+ kept recent turns, unless `keepRecent: "none"`), the model behaves "as
+doc plus the kept recent turns, the model behaves "as
 if freshly briefed," and there's no session switch, no lost file paths, no new
 session entry in `/resume`.

@@ -33,7 +33,6 @@ test("defaults when nothing is configured", () => {
 	const { cwd } = fixture({ someOtherSetting: true });
 	const cfg = loadHandoverConfig(cwd, false);
 	assert.equal(cfg.enabled, true);
-	assert.equal(cfg.keepRecent, "default");
 	assert.equal(cfg.handoverModel, undefined);
 	assert.equal(cfg.outputDir, undefined);
 	assert.equal(cfg.maxWords, 800);
@@ -45,7 +44,6 @@ test("reads piHandover from the global agent dir", () => {
 		piHandover: {
 			enabled: false,
 			handoverModel: "openrouter/google/gemini-2.5-flash",
-			keepRecent: "none",
 			outputDir: "docs/handovers",
 			maxWords: 500,
 			template: "T {conversation}",
@@ -54,7 +52,6 @@ test("reads piHandover from the global agent dir", () => {
 	const cfg = loadHandoverConfig(cwd, false);
 	assert.equal(cfg.enabled, false);
 	assert.equal(cfg.handoverModel, "openrouter/google/gemini-2.5-flash");
-	assert.equal(cfg.keepRecent, "none");
 	assert.equal(cfg.outputDir, "docs/handovers");
 	assert.equal(cfg.maxWords, 500);
 	assert.equal(cfg.template, "T {conversation}");
@@ -89,7 +86,6 @@ test("invalid values fall back to defaults", () => {
 	const { cwd } = fixture({
 		piHandover: {
 			enabled: 0,
-			keepRecent: "bogus",
 			maxWords: "not-a-number",
 			handoverModel: "   ",
 			outputDir: "",
@@ -97,7 +93,6 @@ test("invalid values fall back to defaults", () => {
 	});
 	const cfg = loadHandoverConfig(cwd, false);
 	assert.equal(cfg.enabled, false, "0 is a valid falsy boolean");
-	assert.equal(cfg.keepRecent, "default");
 	assert.equal(cfg.maxWords, 800);
 	assert.equal(cfg.handoverModel, undefined);
 	assert.equal(cfg.outputDir, undefined);

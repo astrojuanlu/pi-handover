@@ -20,8 +20,6 @@ import { formatFileInventory, type FileOperations } from "./handover.ts";
 import { generateHandover, resolveHandoverModel, type AgentMessages, type GenerateHandoverOutcome } from "./generate.ts";
 import { persistHandover } from "./persist.ts";
 import { HANDOVER_PROMPT_VERSION } from "./handover.ts";
-/** Sentinel firstKeptEntryId that matches no entry: keeps nothing (keepRecent: "none"). */
-const KEEP_NONE = "none";
 
 interface HandoverContext {
 	conversation: string;
@@ -106,11 +104,10 @@ export default function (pi: ExtensionAPI) {
 				ctx.ui.notify("pi-handover: could not write handover files (continuing without persistence)", "warning");
 			}
 
-			const firstKeptEntryId = config.keepRecent === "none" ? KEEP_NONE : preparation.firstKeptEntryId;
 			return {
 				compaction: {
 					summary: generated.doc,
-					firstKeptEntryId,
+					firstKeptEntryId: preparation.firstKeptEntryId,
 					tokensBefore: preparation.tokensBefore,
 					...(generated.usage ? { usage: generated.usage } : {}),
 					...(persisted

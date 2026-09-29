@@ -54,6 +54,19 @@ Decisions with rationale, pitfalls discovered, false leads closed, environment f
 ## What is next
 Numbered, executable next steps with exact commands where applicable. Include resume hints: which files to read first, and what NOT to redo.`;
 
+/**
+ * Appended to every generated document: tells the successor model that newer
+ * messages follow the document in context, so "What is next" is a checklist
+ * to verify against them — not a queue to redo.
+ */
+export const RECONCILIATION_NOTE =
+	"> **Handover boundary note:** this document was written from the conversation up to the moment of compaction. Messages newer than this document follow it in context. Treat \"What is next\" as a checklist to verify against those newer messages, not as a queue to execute.";
+
+/** Append the reconciliation note to a validated handover document. */
+export function withReconciliationNote(doc: string): string {
+	return `${doc}\n\n${RECONCILIATION_NOTE}`;
+}
+
 /** The four required section headings, in required order. */
 const REQUIRED_SECTIONS = [
 	"mission",

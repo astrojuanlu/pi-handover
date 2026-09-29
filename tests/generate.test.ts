@@ -49,7 +49,6 @@ function stubRegistry(script: RegistryScript = {}): ModelRegistry {
 
 const config = (over: Partial<HandoverConfig> = {}): HandoverConfig => ({
 	enabled: true,
-	keepRecent: "default",
 	maxWords: 800,
 	...over,
 });
@@ -164,6 +163,7 @@ test("generateHandover returns the validated document and usage", async () => {
 	});
 	assert.ok("result" in outcome, "expected a result outcome");
 	assert.ok(outcome.result.doc.startsWith("# Handover — Generated"));
+	assert.ok(outcome.result.doc.includes("Handover boundary note"), "reconciliation note appended");
 	assert.equal(outcome.result.title, "Generated");
 	assert.deepEqual(outcome.result.usage, { input: 1, output: 2 });
 	assert.equal((contexts[0]?.systemPrompt ?? "").includes("under 500 words"), true, "maxWords cap substituted into the writer system prompt");

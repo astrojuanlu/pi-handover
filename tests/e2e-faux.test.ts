@@ -157,6 +157,7 @@ test("compaction produces a persisted handover document and continues the sessio
 
 		// SPEC §2.1: fixed 4-section structure, in order
 		assert.ok(compaction.summary.startsWith("# Handover — "), "title heading");
+		assert.ok(compaction.summary.includes("Handover boundary note"), "reconciliation note appended");
 		assert.equal(sectionIndices(compaction.summary).length, REQUIRED_SECTIONS.length, "all four sections in order");
 		assert.ok(compaction.summary.includes("banana"), "document carries mission facts");
 
@@ -191,36 +192,6 @@ test("compaction produces a persisted handover document and continues the sessio
 
 		const compactions = e2e.sessionManager.getEntries().filter((e) => e.type === "compaction");
 		assert.equal(compactions.length, 2, "two compaction entries");
-	} finally {
-		e2e.session.dispose();
-	}
-});
-
-test("keepRecent: none clears kept messages — only the document remains", async () => {
-	const e2e = await setupE2E({ piHandover: { keepRecent: "none" } });
-	try {
-		await runWorkturns(e2e);
-		await e2e.session.compact();
-
-		const compaction = lastCompaction(e2e);
-		assert.equal(compaction.firstKeptEntryId, "none", "sentinel firstKeptEntryId stored");
-
-		// The visible context is exactly the compaction summary — nothing kept.
-		// (The compaction entry also re-projects the session system message; that
-		// is pi's mechanism, not a kept conversation message.)
-		const messages = e2e.sessionManager
-			.buildContextEntries()
-			.flatMap((entry) => sessionEntryToContextMessages(entry));
-		assert.equal(
-			messages.filter((m) => m.role !== "compactionSummary" && m.role !== "system").length,
-			0,
-			"no kept messages survive",
-		);
-		assert.equal(
-			messages.filter((m) => m.role === "compactionSummary").length,
-			1,
-			"document is the whole context",
-		);
 	} finally {
 		e2e.session.dispose();
 	}
