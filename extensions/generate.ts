@@ -70,9 +70,18 @@ export interface GeneratedHandover {
 }
 
 export interface GenerateHandoverFailure {
-	reason: "aborted" | "error" | "empty" | "invalid";
+	reason: "aborted" | "error" | "empty" | "invalid" | "length";
 	detail?: string | undefined;
 }
+
+/**
+ * Output cap for the writer call. Must leave generous room for thinking tokens:
+ * reasoning models can spend thousands before emitting any text (observed:
+ * 7,958 reasoning tokens on a ~160k-token transcript, which exhausted an
+ * 8,192 cap and truncated the document). Capped at the model's own limit when
+ * smaller.
+ */
+const HANDOVER_MAX_TOKENS = 32768;
 
 /**
  * Call the handover model and validate the resulting document.
@@ -101,11 +110,12 @@ export async function generateHandover(args: GenerateHandoverArgs): Promise<Gene
 	const systemPrompt = HANDOVER_PROMPT.replaceAll("{maxWords}", String(args.config.maxWords));
 
 	try {
+		const maxTokens = Math.min(args.model.maxTokens ?? HANDOVER_MAX_TOKENS, HANDOVER_MAX_TOKENS);
 		const response = await args.registry.complete(
 			args.model,
 			{ systemPrompt, messages: [userMessage] },
 			{
-				maxTokens: 8192,
+				maxTokens,
 				signal: args.signal,
 				cacheRetention: "none",
 				sessionId: uuidv7(),
@@ -117,6 +127,14 @@ export async function generateHandover(args: GenerateHandoverArgs): Promise<Gene
 		}
 		if (response.stopReason === "error") {
 			return { failure: { reason: "error", detail: response.errorMessage } };
+		}
+		if (response.stopReason === "length") {
+			return {
+				failure: {
+					reason: "length",
+					detail: `output truncated at maxTokens (${maxTokens}); thinking budget exhausted the cap`,
+				},
+			};
 		}
 
 		const text = response.content

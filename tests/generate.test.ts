@@ -27,6 +27,7 @@ interface RegistryScript {
 	complete?: (
 		m: Model<any>,
 		context: { systemPrompt?: string; messages: unknown[] },
+		options?: { maxTokens?: number },
 	) => Promise<AssistantMessage>;
 }
 
@@ -177,6 +178,7 @@ test("generateHandover failure paths all report reasons", async () => {
 	const cases: Array<{ response?: AssistantMessage; error?: Error; expected: string }> = [
 		{ response: fakeResponse({ stopReason: "aborted" }), expected: "aborted" },
 		{ response: fakeResponse({ stopReason: "error", errorMessage: "boom" }), expected: "error" },
+		{ response: fakeResponse({ stopReason: "length", text: "# Handover — truncated" }), expected: "length" },
 		{ response: fakeResponse({ text: "   " }), expected: "empty" },
 		{ response: fakeResponse({ text: "## only one section" }), expected: "invalid" },
 		{ error: new Error("network down"), expected: "error" },
@@ -200,6 +202,34 @@ test("generateHandover failure paths all report reasons", async () => {
 	if (cases[1]?.response) {
 		// spot-check error detail propagation
 	}
+});
+
+test("generateHandover caps the writer at 32768 tokens but honors smaller model limits", async () => {
+	const seen: number[] = [];
+	const run = (m: Model<any>) =>
+		generateHandover({
+			registry: stubRegistry({
+				complete: async (_m, _c, options) => {
+					seen.push(options?.maxTokens ?? -1);
+					return fakeResponse({ text: sampleDoc("Capped") });
+				},
+			}),
+			model: m,
+			conversation: "CONV",
+			config: config(),
+			signal: new AbortController().signal,
+		});
+
+	// default (no model limit) → 32768
+	await run(model("faux", "writer"));
+	// huge model limit → clamped to 32768
+	await run({ ...model("faux", "writer"), maxTokens: 943717 });
+	// small model limit → respected
+	await run({ ...model("faux", "writer"), maxTokens: 4096 });
+
+	// Regression: an 8192 cap let reasoning tokens exhaust the budget and
+	// truncate the document (observed live on a ~160k-token transcript).
+	assert.deepEqual(seen, [32768, 32768, 4096]);
 });
 
 test("generateHandover maps a throw while aborted to reason 'aborted'", async () => {
