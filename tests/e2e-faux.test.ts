@@ -178,6 +178,18 @@ test("compaction produces a persisted handover document and continues the sessio
 		assert.ok(e2e.handoverPrompts[0]?.includes("<conversation>"), "conversation serialized");
 		assert.ok(!e2e.handoverPrompts[0]?.includes("<base-handover>"), "no base for the first compaction");
 
+		// TUI visibility: a custom entry follows the handover compaction (never in LLM context)
+		const custom = e2e.sessionManager
+			.getEntries()
+			.filter((e) => e.type === "custom")
+			.find((e) => (e as { customType?: string }).customType === "handover");
+		assert.ok(custom, "[handover] custom entry appended after compaction");
+		const customData = (custom as { data?: { doc?: string; title?: string; file?: string; tokensBefore?: number } }).data;
+		assert.equal(customData?.doc, compaction.summary, "entry carries the full document");
+		assert.ok(customData?.title, "entry carries the extracted title");
+		assert.equal(customData?.file, details.handoverFile);
+		assert.equal(customData?.tokensBefore, compaction.tokensBefore);
+
 		// Session continues with the document as context
 		await e2e.session.prompt("Continue: what was the secret project word?");
 		assert.ok((e2e.session.getLastAssistantText() ?? "").length > 0, "session still responds after compaction");

@@ -1,6 +1,6 @@
 {
   "name": "@astrojuanlu/pi-handover",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Handover-document compaction for the pi coding agent",
   "scripts": {
     "typecheck": "tsc --noEmit",
@@ -13,7 +13,7 @@
     "compaction",
     "handover"
   ],
-  "author": "Juan Luis Cano Rodr\u00edguez",
+  "author": "Juan Luis Cano Rodríguez",
   "publishConfig": {
     "access": "public"
   },
@@ -21,6 +21,7 @@
   "devDependencies": {
     "@earendil-works/pi-ai": "^0.87.1",
     "@earendil-works/pi-coding-agent": "^0.87.1",
+    "@earendil-works/pi-tui": "^0.87.1",
     "typescript": "^7.0.2"
   },
   "pi": {

@@ -17,6 +17,7 @@ import { BorderedLoader, convertToLlm, getLatestCompactionEntry, serializeConver
 import type { ExtensionAPI, SessionEntry } from "@earendil-works/pi-coding-agent";
 import { loadHandoverConfig, type HandoverConfig } from "./config.ts";
 import { formatFileInventory, type FileOperations } from "./handover.ts";
+import { createHandoverEntryData, HANDOVER_ENTRY_TYPE, renderHandoverEntry, type HandoverEntryData } from "./display.ts";
 import { generateHandover, resolveHandoverModel, type AgentMessages, type GenerateHandoverOutcome } from "./generate.ts";
 import { persistHandover } from "./persist.ts";
 import { HANDOVER_PROMPT_VERSION } from "./handover.ts";
@@ -46,6 +47,10 @@ export default function (pi: ExtensionAPI) {
 	// Warn once per session when the handover falls back to the (possibly weak)
 	// session model because no handoverModel is configured.
 	let warnedSessionModel = false;
+
+	// TUI-only [handover] block: mirrors pi's compaction summary component so the
+	// document is discoverable in the transcript (custom entries never reach the LLM).
+	pi.registerEntryRenderer<HandoverEntryData>(HANDOVER_ENTRY_TYPE, renderHandoverEntry);
 
 	// SPEC §2.3: hook integration for all trigger reasons.
 	pi.on("session_before_compact", async (event, ctx) => {
@@ -122,10 +127,19 @@ export default function (pi: ExtensionAPI) {
 		}
 	});
 
-	// Announce where the handover was written (covers /handover, /compact and auto triggers).
+	// Persist a TUI-only [handover] entry and announce where the file was written
+	// (covers /handover, /compact and auto triggers).
 	pi.on("session_compact", async (event, ctx) => {
 		const details = event.compactionEntry.details as { handoverFile?: string } | undefined;
 		if (event.fromExtension && details?.handoverFile) {
+			pi.appendEntry(
+				HANDOVER_ENTRY_TYPE,
+				createHandoverEntryData(
+					event.compactionEntry.summary,
+					details.handoverFile,
+					event.compactionEntry.tokensBefore,
+				),
+			);
 			ctx.ui.notify(`Handover written: ${details.handoverFile}`, "info");
 		}
 	});

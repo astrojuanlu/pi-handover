@@ -96,6 +96,19 @@ In `~/.pi/agent/settings.json` (global) or `<project>/.pi/settings.json`
 | `maxWords` | `800` | Length cap for the document. |
 | `template` | built-in | Full prompt-template override. Placeholders: `{conversation}`, `{fileInventory}`, `{previousHandover}`, `{extraInstructions}`, `{maxWords}`. The four-section structure is still enforced by validation. |
 
+## Visibility in the TUI
+
+The handover document is visible in the chat transcript in two places:
+
+- pi itself renders every compaction as a collapsible `[compaction]` block
+  (`Compacted from N tokens`; `ctrl+o` expands it).
+- The extension additionally appends a TUI-only `[handover]` block right
+  after the compaction — labeled with the document title and the file path,
+  expanding to the full document under `ctrl+o`. It mirrors pi's own
+  compaction-summary component (same colors, same collapse semantics) and,
+  being a custom entry, **never enters the model context** — the document
+  reaches the model only through the compaction summary.
+
 ## Fallback guarantee
 
 If generation fails, is empty, is aborted, or the document is missing one of
