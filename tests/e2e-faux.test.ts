@@ -166,7 +166,7 @@ test("compaction produces a persisted handover document and continues the sessio
 		assert.ok(compaction.tokensBefore > 0);
 		const details = compaction.details as { handoverFile?: string; promptVersion?: number };
 		assert.ok(details.handoverFile, "details.handoverFile stamped");
-		assert.equal(details.promptVersion, 1);
+		assert.equal(details.promptVersion, 2);
 
 		// SPEC §2.2: disk persistence
 		assert.ok(existsSync(details.handoverFile!), "timestamped file on disk");

@@ -169,6 +169,10 @@ test("generateHandover returns the validated document and usage", async () => {
 	assert.deepEqual(outcome.result.usage, { input: 1, output: 2 });
 	assert.equal((contexts[0]?.systemPrompt ?? "").includes("under 500 words"), true, "maxWords cap substituted into the writer system prompt");
 	assert.ok((contexts[0]?.systemPrompt ?? "").includes("## Mission"), "system prompt keeps the section structure");
+	assert.ok(
+		(contexts[0]?.systemPrompt ?? "").includes("Do NOT continue the conversation"),
+			"anti-continuation guard present (mirrors pi's split-turn summarizer fix)",
+	);
 	const userText =
 		((contexts[0]?.messages ?? []) as Array<{ content: Array<{ type: string; text: string }> }>)[0]?.content[0]?.text ?? "";
 	assert.ok(userText.includes("<base-handover>\nBASE\n</base-handover>"));
